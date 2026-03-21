@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Visceral Holography</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@300;400&display=swap');
+  :root{--bg:#0a0a0f;--surface:#12121a;--vagal:#c49a6c;--attention:#d4aa40;--readout:#4ecdc4;--text:#c8c4b8;--dim:#6a6860;--accent:#e8d5a3}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);font-family:'EB Garamond',Georgia,serif;overflow-x:hidden;min-height:100dvh}
+  .header{text-align:center;padding:20px 16px 4px}
+  .header h1{font-size:1.5em;font-weight:400;letter-spacing:.08em;color:var(--accent)}
+  .header .sub{font-size:.75em;color:var(--dim);font-style:italic}
+  .epigraph{text-align:center;font-style:italic;color:var(--dim);font-size:.78em;padding:4px 16px 12px}
+  .main{max-width:600px;margin:0 auto;padding:0 10px 30px;display:flex;flex-direction:column;gap:8px}
+  .panel{background:var(--surface);border:1px solid #1e1e2a;border-radius:8px;overflow:hidden}
+  .ptitle{font-family:'JetBrains Mono',monospace;font-size:.55em;font-weight:300;text-transform:uppercase;letter-spacing:.12em;padding:7px 12px;border-bottom:1px solid #1e1e2a;color:var(--dim);display:flex;justify-content:space-between;align-items:center}
+  .ptitle span{color:var(--accent)}
+  canvas{display:block;width:100%;touch-action:none;cursor:crosshair}
+  .modes-row{display:flex;gap:6px;padding:5px 12px;flex-wrap:wrap}
+  .mode-tag{font-family:'JetBrains Mono',monospace;font-size:.48em;color:var(--dim);display:flex;align-items:center;gap:3px}
+  .mode-tag .dot{width:6px;height:6px;border-radius:50%}
+  .controls{background:var(--surface);border:1px solid #1e1e2a;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px}
+  .ctrl-label{font-family:'JetBrains Mono',monospace;font-size:.52em;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px}
+  .btn-row{display:flex;gap:5px;flex-wrap:wrap}
+  button{font-family:'JetBrains Mono',monospace;font-size:.58em;padding:7px 10px;border:1px solid #2a2a3a;background:var(--surface);color:var(--text);cursor:pointer;border-radius:6px;text-transform:uppercase;letter-spacing:.08em;transition:all .15s;touch-action:manipulation;flex:1;min-width:0;text-align:center}
+  button:active{transform:scale(.97)}
+  button.on{background:rgba(232,213,163,.15);border-color:var(--accent);color:var(--accent)}
+  button.pause-on{background:rgba(212,170,64,.2);border-color:var(--attention);color:var(--attention)}
+  .slider-row{display:flex;align-items:center;gap:8px}
+  input[type="range"]{-webkit-appearance:none;flex:1;height:4px;background:#2a2a3a;border-radius:2px;outline:none}
+  input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer}
+  .slider-val{font-family:'JetBrains Mono',monospace;font-size:.58em;color:var(--accent);min-width:28px;text-align:right}
+  .tool-row{display:flex;gap:5px;align-items:center}
+  .tool-row button{flex:0;padding:7px 10px}
+  .status{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px 10px;padding:8px 12px;background:var(--surface);border:1px solid #1e1e2a;border-radius:8px}
+  .stat{font-family:'JetBrains Mono',monospace;font-size:.48em;color:var(--dim);display:flex;justify-content:space-between}
+  .stat .v{color:var(--accent)}.stat .v.rd{color:var(--readout)}.stat .v.att{color:var(--attention)}
+  .field-wrap{position:relative}
+  .pause-badge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'JetBrains Mono',monospace;font-size:.7em;color:var(--attention);text-transform:uppercase;letter-spacing:.2em;pointer-events:none;opacity:0;transition:opacity .2s}
+  .pause-badge.show{opacity:.6}
+  .legend{padding:12px;background:var(--surface);border:1px solid #1e1e2a;border-radius:8px;font-size:.76em;line-height:1.6;color:var(--dim)}
+  .legend p{margin-bottom:5px}.legend strong{color:var(--text);font-weight:600}.legend em{color:var(--accent);font-style:normal}
+  .legend-toggle{font-family:'JetBrains Mono',monospace;font-size:.52em;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;padding:7px 12px;background:var(--surface);border:1px solid #1e1e2a;border-radius:8px;width:100%;text-align:center;cursor:pointer}
+  .legend.hidden{display:none}
+  .slide-row{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+  .save-slide{flex:0!important;min-width:auto!important}
+  .slide-thumb{width:52px;height:52px;border-radius:4px;border:1px solid #2a2a3a;cursor:pointer;position:relative;overflow:hidden;flex:0 0 52px;transition:border-color .2s}
+  .slide-thumb:hover{border-color:var(--accent)}
+  .slide-thumb.active{border-color:var(--readout);box-shadow:0 0 6px rgba(78,205,196,.3)}
+  .slide-thumb canvas{width:100%;height:100%;display:block}
+  .slide-thumb .slide-x{position:absolute;top:1px;right:2px;font-family:'JetBrains Mono',monospace;font-size:.45em;color:#555;cursor:pointer;line-height:1;padding:2px}
+  .slide-thumb .slide-x:hover{color:#c05050}
+  .slide-thumb .slide-num{position:absolute;bottom:1px;left:2px;font-family:'JetBrains Mono',monospace;font-size:.4em;color:var(--dim);line-height:1}
+</style>
+</head>
+<body>
+<div class="header"><h1>Visceral Holography</h1><div class="sub">The Enteric Nervous System as a Somatic Computation Channel</div></div>
+<div class="epigraph">The gut does not think. The gut provides light.</div>
+<div class="main">
+  <div class="panel">
+    <div class="ptitle"><span>§1–7</span> Enteric Field + Cortical Film <span id="mC">2 modes</span></div>
+    <div class="field-wrap">
+      <canvas id="eC"></canvas>
+      <div class="pause-badge" id="pauseBadge">▌▌ paused</div>
+    </div>
+    <div class="modes-row" id="mR"></div>
+  </div>
+  <div class="controls">
+    <div><div class="ctrl-label">Carrier Modes</div>
+      <div class="btn-row">
+        <button id="bP" class="on" onclick="tM('p')">Peristaltic</button>
+        <button id="bS" class="on" onclick="tM('s')">Segmental</button>
+        <button id="bT" onclick="tM('t')">Tonic</button>
+        <button id="bM" onclick="tM('m')">MMC</button>
+      </div>
+    </div>
+    <div><div class="ctrl-label">Attention</div>
+      <div class="slider-row"><input type="range" id="aS" min="0" max="100" value="40"><div class="slider-val" id="aV">0.40</div></div>
+    </div>
+    <div class="tool-row">
+      <button onclick="togglePause()" id="pauseBtn">⏸ Pause</button>
+      <button onclick="erasing=!erasing;this.classList.toggle('on');eC.style.cursor=erasing?'not-allowed':'crosshair'" id="eraserBtn">Eraser</button>
+      <button onclick="clearAll()">Clear All</button>
+    </div>
+    <div>
+      <div class="ctrl-label">Slides</div>
+      <div class="slide-row" id="slideRow">
+        <button class="save-slide" onclick="saveSlide()">+ Save</button>
+      </div>
+    </div>
+  </div>
+  <div class="status">
+    <div class="stat">Marks <span class="v" id="sMk">0</span></div>
+    <div class="stat">Visible <span class="v rd" id="sVis">0</span></div>
+    <div class="stat">Avg match <span class="v" id="sAvg">—</span></div>
+    <div class="stat">Coherence <span class="v" id="sC">0.00</span></div>
+    <div class="stat">Attention <span class="v att" id="sA">0.40</span></div>
+    <div class="stat">Slides <span class="v" id="sSl">0</span></div>
+  </div>
+  <button class="legend-toggle" onclick="document.getElementById('leg').classList.toggle('hidden')">How It Works ▾</button>
+  <div class="legend hidden" id="leg">
+    <p><strong>Draw on the field.</strong> Each pixel you paint is stamped with the carrier's local state — a 5×5 neighborhood snapshot at that point. Every mark has its own key.</p>
+    <p><strong>Marks blur in and out.</strong> Each frame, each pixel's stored neighborhood is compared to the current carrier. Strong match = sharp, bright. Partial match = blurred, spread into neighbors, dimmed. Anti-phase = invisible. The blur is spatial — the pixel literally spreads — because holographic reconstruction degrades gracefully, not categorically.</p>
+    <p><strong>Pause</strong> freezes the carrier for careful drawing. <strong>Different modes</strong> produce different keys. Marks drawn under one mode configuration blur out when you switch, sharpen when you switch back.</p>
+    <p><strong>Slides</strong> let you snapshot the whole board — all marks and their carrier keys — and reload them later. Save a drawing, clear, draw something new, save again. Load any slide to restore that state into the living field. The holographic blur still applies.</p>
+  </div>
+</div>
+<script>
+var G=48; // slightly finer grid
+var Mo={p:{on:true,f:.05,c:[40,120,200],l:'Peristaltic'},s:{on:true,f:.2,c:[100,180,120],l:'Segmental'},t:{on:false,f:.008,c:[180,140,80],l:'Tonic'},m:{on:false,f:.0002,c:[160,80,140],l:'MMC'}};
+var att=.4,paused=false,erasing=false,t=0;
+var NB=2; // neighborhood radius for local snapshot (5x5 patch)
+var NBS=(NB*2+1); // 5
+var NBSQ=NBS*NBS; // 25
+
+// Per-pixel storage: null or Float32Array(25) for the local carrier neighborhood at encoding
+var pixelSnaps=new Array(G*G).fill(null);
+// Per-pixel match cache (updated every few frames)
+var pixelMatch=new Float32Array(G*G);
+
+var eC=document.getElementById('eC'),eX=eC.getContext('2d');
+function resize(){var d=window.devicePixelRatio||1;var w=eC.parentElement.clientWidth;var h=Math.min(w,Math.max(200,w*.75));
+  eC.width=w*d;eC.height=h*d;eC.style.height=h+'px';eX.scale(d,d)}
+resize();window.addEventListener('resize',resize);
+
+function updM(){var a=Object.entries(Mo).filter(function(e){return e[1].on});
+  document.getElementById('mC').textContent=a.length+' mode'+(a.length!==1?'s':'');
+  document.getElementById('mR').innerHTML=a.map(function(e){return'<div class="mode-tag"><div class="dot" style="background:rgb('+e[1].c+')"></div>'+e[1].l+'</div>'}).join('')}
+updM();
+
+function tM(k){Mo[k].on=!Mo[k].on;document.getElementById({p:'bP',s:'bS',t:'bT',m:'bM'}[k]).classList.toggle('on');updM()}
+document.getElementById('aS').addEventListener('input',function(e){att=e.target.value/100;document.getElementById('aV').textContent=att.toFixed(2);document.getElementById('sA').textContent=att.toFixed(2)});
+
+function fv(x,y,time){var v=0,n=0;
+  if(Mo.p.on){n++;v+=Math.sin(6.28*(Mo.p.f*time-x*.03+y*.01))}
+  if(Mo.s.on){n++;v+=Math.sin(6.28*Mo.s.f*time)*Math.cos(x*.08)*Math.cos(y*.08)}
+  if(Mo.t.on){n++;v+=.6*Math.sin(6.28*Mo.t.f*time)*(1+.3*Math.sin(x*.02+y*.02))}
+  if(Mo.m.on){n++;v+=.4*Math.sin(6.28*Mo.m.f*time)*Math.sin((x+y)*.015)}
+  return n>0?v/n:0}
+
+function togglePause(){paused=!paused;document.getElementById('pauseBtn').classList.toggle('pause-on');document.getElementById('pauseBadge').classList.toggle('show')}
+
+// Capture 5x5 local neighborhood around (cx,cy)
+function captureLocal(cx,cy,time){
+  var snap=new Float32Array(NBSQ);
+  for(var dx=-NB;dx<=NB;dx++){for(var dy=-NB;dy<=NB;dy++){
+    var sx=cx+dx,sy=cy+dy;
+    if(sx<0)sx=0;if(sx>=G)sx=G-1;if(sy<0)sy=0;if(sy>=G)sy=G-1;
+    snap[(dy+NB)*NBS+(dx+NB)]=fv(sx,sy,time)}}
+  return snap}
+
+// Compute match for one pixel: cosine similarity of stored vs current 5x5
+function matchPixel(cx,cy,snap,time){
+  var dot=0,ns=0,nc=0;
+  for(var dx=-NB;dx<=NB;dx++){for(var dy=-NB;dy<=NB;dy++){
+    var sx=cx+dx,sy=cy+dy;
+    if(sx<0)sx=0;if(sx>=G)sx=G-1;if(sy<0)sy=0;if(sy>=G)sy=G-1;
+    var s=snap[(dy+NB)*NBS+(dx+NB)];
+    var c=fv(sx,sy,time);
+    dot+=s*c;ns+=s*s;nc+=c*c}}
+  var d=Math.sqrt(ns)*Math.sqrt(nc);
+  return d<.0001?0:dot/d}
+
+// Drawing
+var isDrawing=false;
+function getGridPos(e){var r=eC.getBoundingClientRect();var touch=e.touches?e.touches[0]:e;
+  var x=Math.floor((touch.clientX-r.left)/r.width*G);var y=Math.floor((touch.clientY-r.top)/r.height*G);
+  return{x:Math.max(0,Math.min(G-1,x)),y:Math.max(0,Math.min(G-1,y))}}
+
+function paintAt(gx,gy){
+  for(var dx=-1;dx<=1;dx++){for(var dy=-1;dy<=1;dy++){
+    if(dx*dx+dy*dy>1)continue;
+    var px=gx+dx,py=gy+dy;
+    if(px<0||px>=G||py<0||py>=G)continue;
+    var idx=py*G+px;
+    if(erasing){pixelSnaps[idx]=null;pixelMatch[idx]=0}
+    else{pixelSnaps[idx]=captureLocal(px,py,t)}}}}
+
+eC.addEventListener('pointerdown',function(e){isDrawing=true;eC.setPointerCapture(e.pointerId);paintAt.apply(null,function(e){var p=getGridPos(e);return[p.x,p.y]}(e))});
+eC.addEventListener('pointermove',function(e){if(!isDrawing)return;var p=getGridPos(e);paintAt(p.x,p.y)});
+eC.addEventListener('pointerup',function(){isDrawing=false});
+eC.addEventListener('pointercancel',function(){isDrawing=false});
+
+function clearAll(){pixelSnaps.fill(null);pixelMatch.fill(0)}
+
+// ── Slides ──
+var slides=[];
+
+function saveSlide(){
+  // Snapshot everything: pixelSnaps array, carrier time, modes, attention
+  var snapsCopy=[];
+  for(var i=0;i<G*G;i++){
+    snapsCopy[i]=pixelSnaps[i]?new Float32Array(pixelSnaps[i]):null}
+  var modesCopy={};
+  Object.entries(Mo).forEach(function(e){modesCopy[e[0]]={on:e[1].on,f:e[1].f}});
+  // Generate thumbnail
+  var thumbCanvas=document.createElement('canvas');
+  thumbCanvas.width=52;thumbCanvas.height=52;
+  var tx=thumbCanvas.getContext('2d');
+  var tw=52/G,th=52/G;
+  for(var y=0;y<G;y++){for(var x=0;x<G;x++){
+    var hasPixel=pixelSnaps[y*G+x]!==null;
+    if(hasPixel){tx.fillStyle='rgba(232,213,163,.8)'}
+    else{
+      var fvv=fv(x,y,t);var iv=(fvv+1)/2;
+      tx.fillStyle='rgb('+(10+iv*30|0)+','+(10+iv*30|0)+','+(20+iv*40|0)+')'}
+    tx.fillRect(x*tw,y*th,tw+.5,th+.5)}}
+  var slide={snaps:snapsCopy,time:t,modes:modesCopy,att:att,thumb:thumbCanvas.toDataURL()};
+  slides.push(slide);
+  rebuildSlideStrip()}
+
+function loadSlide(idx){
+  var slide=slides[idx];if(!slide)return;
+  // Restore pixel data
+  for(var i=0;i<G*G;i++){
+    pixelSnaps[i]=slide.snaps[i]?new Float32Array(slide.snaps[i]):null}
+  // Restore modes
+  Object.entries(slide.modes).forEach(function(e){
+    Mo[e[0]].on=e[1].on;
+    var id={p:'bP',s:'bS',t:'bT',m:'bM'}[e[0]];
+    if(Mo[e[0]].on)document.getElementById(id).classList.add('on');
+    else document.getElementById(id).classList.remove('on')});
+  updM();
+  // Restore attention
+  att=slide.att;
+  document.getElementById('aS').value=att*100;
+  document.getElementById('aV').textContent=att.toFixed(2);
+  document.getElementById('sA').textContent=att.toFixed(2);
+  // Highlight active slide
+  document.querySelectorAll('.slide-thumb').forEach(function(el,i){
+    el.classList.toggle('active',i===idx)})}
+
+function deleteSlide(idx,ev){
+  ev.stopPropagation();
+  slides.splice(idx,1);
+  rebuildSlideStrip()}
+
+function rebuildSlideStrip(){
+  var row=document.getElementById('slideRow');
+  row.innerHTML='<button class="save-slide" onclick="saveSlide()">+ Save</button>';
+  slides.forEach(function(slide,i){
+    var div=document.createElement('div');
+    div.className='slide-thumb';
+    div.onclick=function(){loadSlide(i)};
+    div.innerHTML='<img src="'+slide.thumb+'" style="width:100%;height:100%;display:block">'
+      +'<span class="slide-x" onclick="deleteSlide('+i+',event)">×</span>'
+      +'<span class="slide-num">'+(i+1)+'</span>';
+    row.appendChild(div)})}
+
+// ── Render ──
+function getCarrierColor(){var r=25,g=25,b=35,n=0;
+  Object.entries(Mo).forEach(function(e){if(!e[1].on)return;n++;
+    var amp=Math.sin(6.28*e[1].f*t)*.5+.5;
+    r+=e[1].c[0]*amp;g+=e[1].c[1]*amp;b+=e[1].c[2]*amp});
+  if(n>0){r/=n;g/=n;b/=n}return[r|0,g|0,b|0]}
+
+// Two-pass: first compute matches, then render with blur bleed
+var blurBuf=new Float32Array(G*G); // accumulated blur brightness per pixel
+
+function render(){
+  var w=eC.width/(window.devicePixelRatio||1),h=eC.height/(window.devicePixelRatio||1);
+  var cw=w/G,ch=h/G;
+  var cc=getCarrierColor();
+
+  // Pass 1: compute per-pixel match and blur contributions
+  blurBuf.fill(0);
+  var totalMarks=0,visibleMarks=0,matchSum=0,matchCount=0;
+
+  for(var y=0;y<G;y++){for(var x=0;x<G;x++){
+    var idx=y*G+x;
+    var snap=pixelSnaps[idx];
+    if(!snap)continue;
+    totalMarks++;
+    // Update match (every pixel every frame for smoothness)
+    var m=matchPixel(x,y,snap,t);
+    pixelMatch[idx]=m;
+    var alpha=Math.max(0,Math.min(1,(m+.15)/1.15));
+    matchSum+=m;matchCount++;
+    if(alpha>.05)visibleMarks++;
+
+    // Blur spread: this pixel contributes to neighbors based on (1-alpha)
+    var spread=Math.max(0,(1-alpha)*2); // blur radius in cells: 0 at full match, up to 2
+    var brightness=alpha*att*1.6;
+    if(brightness<.01)continue;
+
+    // Write to blur buffer: self + neighbors weighted by gaussian-ish falloff
+    var R=Math.ceil(spread);
+    for(var bx=-R;bx<=R;bx++){for(var by=-R;by<=R;by++){
+      var px=x+bx,py=y+by;
+      if(px<0||px>=G||py<0||py>=G)continue;
+      var dist=Math.sqrt(bx*bx+by*by);
+      if(dist>spread+.5)continue;
+      // Gaussian-ish weight: peak at center, falls off
+      var weight;
+      if(spread<.1){weight=dist<.5?brightness:0}
+      else{weight=brightness*Math.exp(-dist*dist/(spread*spread*.5+.01))}
+      blurBuf[py*G+px]+=weight}}
+  }}
+
+  // Pass 2: render
+  eX.fillStyle='#080810';eX.fillRect(0,0,w,h);
+
+  for(var y=0;y<G;y++){for(var x=0;x<G;x++){
+    var r=8,g=8,b=16;
+    // Carrier field base
+    Object.entries(Mo).forEach(function(e){if(!e[1].on)return;var c,k=e[0],v=e[1];
+      if(k==='p')c=Math.sin(6.28*(v.f*t-x*.03+y*.01));else if(k==='s')c=Math.sin(6.28*v.f*t)*Math.cos(x*.08)*Math.cos(y*.08);
+      else if(k==='t')c=.6*Math.sin(6.28*v.f*t);else c=.4*Math.sin(6.28*v.f*t)*Math.sin((x+y)*.015);
+      var i=(c+1)/2;r+=v.c[0]*i*.3;g+=v.c[1]*i*.3;b+=v.c[2]*i*.3});
+    // Attention glow
+    if(att>.3){var gl=(att-.3)*1.5,av=Math.abs(fv(x,y,t));r+=25*gl*av;g+=18*gl*av;b+=6*gl*av}
+    // Mark contribution from blur buffer — carrier-colored
+    var bv=blurBuf[y*G+x];
+    if(bv>.01){r+=cc[0]*bv;g+=cc[1]*bv;b+=cc[2]*bv}
+    eX.fillStyle='rgb('+Math.min(255,r|0)+','+Math.min(255,g|0)+','+Math.min(255,b|0)+')';
+    eX.fillRect(x*cw,y*ch,cw+.5,ch+.5)}}
+
+  // Gap junctions
+  eX.strokeStyle='rgba(100,140,180,.03)';eX.lineWidth=.5;
+  for(var x=0;x<G;x+=6)for(var y=0;y<G;y+=6){eX.beginPath();eX.arc(x*cw+cw*3,y*ch+ch*3,1.5,0,6.28);eX.stroke()}
+  // IGLEs
+  eX.fillStyle='rgba(196,154,108,'+((.2+att*.35).toFixed(2))+')';
+  for(var i=0;i<12;i++){var ix=(i+.5)*(w/12),p=Math.sin(t*3+i*.5)*1.5;
+    eX.beginPath();eX.moveTo(ix-2.5,0);eX.lineTo(ix+2.5,0);eX.lineTo(ix+1,5+p);eX.lineTo(ix-1,5+p);eX.fill()}
+
+  // Stats (throttled)
+  if(fc%12===0){
+    document.getElementById('sMk').textContent=totalMarks;
+    document.getElementById('sVis').textContent=visibleMarks;
+    document.getElementById('sAvg').textContent=matchCount>0?(matchSum/matchCount).toFixed(3):'—';
+    var actN=Object.values(Mo).filter(function(v){return v.on}).length;
+    var coh=0;for(var cx=0;cx<G;cx+=6)for(var cy=0;cy<G;cy+=6)coh+=Math.abs(fv(cx,cy,t));
+    coh=Math.min(1,coh/Math.pow(G/6,2)*.7+actN*.1);
+    document.getElementById('sC').textContent=coh.toFixed(2);
+    document.getElementById('sSl').textContent=slides.length}}
+
+// ── Loop ──
+var fc=0;
+function loop(){
+  if(!paused)t+=.016;fc++;
+  render();
+  requestAnimationFrame(loop)}
+loop();
+</script>
+</body>
+</html>
