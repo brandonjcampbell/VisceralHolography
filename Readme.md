@@ -1,4 +1,5 @@
-[https://brandonjcampbell.github.io/VisceralHolography/]
+Try this conceptual demonstration to get a feel for the concept: [https://brandonjcampbell.github.io/VisceralHolography/]
+
 **Visceral Holography**
 
 The Enteric Nervous System as a Somatic Computation Channel
