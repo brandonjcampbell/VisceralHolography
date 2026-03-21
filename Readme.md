@@ -1,4 +1,4 @@
-
+[https://brandonjcampbell.github.io/VisceralHolography/]
 **Visceral Holography**
 
 The Enteric Nervous System as a Somatic Computation Channel
